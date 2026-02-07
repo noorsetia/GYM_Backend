@@ -26,12 +26,15 @@ app.use((req, res, next) => {
 // Middleware
 app.use(
   cors({
-    // reflect request origin to avoid CORS issues during development
-    origin: true,
-    methods: ["GET", "POST"],
+    // Prefer explicit FRONTEND_URL in production; fall back to allowing all
+    origin: process.env.FRONTEND_URL || true,
+    methods: ["GET", "POST", "OPTIONS"],
     credentials: true,
   })
 );
+
+// Log the CORS configuration for debugging (do not expose secrets in logs)
+console.log("CORS origin set to:", process.env.FRONTEND_URL || "<allow all>");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
