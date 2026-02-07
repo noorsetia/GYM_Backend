@@ -1,10 +1,19 @@
 import express from "express";
 import { config } from "dotenv";
+import fs from "fs";
 import cors from "cors";
-import { sendEmail } from "./utils/sendEmail.js";
+import { sendEmail, verifySMTP } from "./utils/sendEmail.js";
 
-// Initialize
-config({ path: "./config.env" });
+// Initialize - prefer `config.env` but fall back to `.env` if present
+const envPath = fs.existsSync("./config.env") ? "./config.env" : fs.existsSync("./.env") ? "./.env" : undefined;
+if (envPath) {
+  config({ path: envPath });
+  console.log(`Loaded env from ${envPath}`);
+} else {
+  // fallback to default dotenv behavior (no path)
+  config();
+  console.log("Loaded env using default dotenv config()");
+}
 const app = express();
 const router = express.Router();
 
@@ -31,10 +40,18 @@ app.use(express.urlencoded({ extended: true }));
 router.post("/send/mail", async (req, res) => {
   const { name, email, message } = req.body;
 
-  if (!name || !email || !message) {
+  // Log incoming body for debugging (avoid logging in production with secrets)
+  console.log("[/send/mail] body:", req.body);
+
+  const missing = [];
+  if (!name) missing.push("name");
+  if (!email) missing.push("email");
+  if (!message) missing.push("message");
+
+  if (missing.length > 0) {
     return res.status(400).json({
       success: false,
-      message: "Please provide all details",
+      message: `Please provide all details. Missing: ${missing.join(", ")}`,
     });
   }
 
@@ -46,16 +63,25 @@ router.post("/send/mail", async (req, res) => {
       userEmail: email,
     });
 
-    res.status(200).json({
-      success: true,
-      message: "Message Sent Successfully.",
-    });
+    res.status(200).json({ success: true, message: "Message Sent Successfully." });
   } catch (error) {
-    console.error(error);
+    console.error("[/send/mail] error:", error && error.message ? error.message : error);
+    // Return a clearer error message to help debugging (avoid exposing secrets in production)
     res.status(500).json({
       success: false,
-      message: "Internal Server Error",
+      message: error && error.message ? error.message : "Internal Server Error",
     });
+  }
+});
+
+// Utility route to verify SMTP configuration (useful for deployment checks)
+router.get("/mail/verify", async (req, res) => {
+  try {
+    await verifySMTP();
+    res.json({ success: true, message: "SMTP verified" });
+  } catch (err) {
+    console.error("[/mail/verify] error:", err && err.message ? err.message : err);
+    res.status(500).json({ success: false, message: err && err.message ? err.message : "SMTP verification failed" });
   }
 });
 
