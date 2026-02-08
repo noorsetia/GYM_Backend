@@ -26,15 +26,36 @@ app.use((req, res, next) => {
 // Middleware
 app.use(
   cors({
-    // Prefer explicit FRONTEND_URL in production; fall back to allowing all
-    origin: process.env.FRONTEND_URL || true,
+    // In development, allow any localhost origin; in production use FRONTEND_URL
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+      
+      // In development, allow any localhost port
+      if (origin.match(/^http:\/\/localhost:\d+$/) || origin.match(/^http:\/\/127\.0\.0\.1:\d+$/)) {
+        return callback(null, true);
+      }
+      
+      // In production, check against FRONTEND_URL
+      if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+        return callback(null, true);
+      }
+      
+      // Allow if FRONTEND_URL not set (development fallback)
+      if (!process.env.FRONTEND_URL) {
+        return callback(null, true);
+      }
+      
+      // Reject if none of the above
+      callback(new Error('Not allowed by CORS'));
+    },
     methods: ["GET", "POST", "OPTIONS"],
     credentials: true,
   })
 );
 
 // Log the CORS configuration for debugging (do not expose secrets in logs)
-console.log("CORS origin set to:", process.env.FRONTEND_URL || "<allow all>");
+console.log("CORS: allowing localhost in dev, FRONTEND_URL:", process.env.FRONTEND_URL || "<not set>");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
