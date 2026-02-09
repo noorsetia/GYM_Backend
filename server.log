@@ -1,0 +1,17 @@
+nohup: ignoring input
+
+> backend@1.0.0 start
+> node app.js
+
+Loaded env from ./.env
+CORS: allowing localhost in dev, FRONTEND_URL: http://localhost:5174
+🚀 Server running on port 4000
+✅ MongoDB Connected: ac-witzj3t-shard-00-00.l1vpd3x.mongodb.net
+POST /api/auth/login
+GET /api/plans
+POST /api/auth/login
+GET /api/dashboard/stats
+POST /api/contacts
+POST /api/auth/login
+GET /api/contacts
+POST /api/members

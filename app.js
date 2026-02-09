@@ -3,6 +3,15 @@ import { config } from "dotenv";
 import fs from "fs";
 import cors from "cors";
 import { sendEmail, verifySMTP } from "./utils/sendEmail.js";
+import { connectDB } from "./config/database.js";
+
+// Import routes
+import authRoutes from "./routes/auth.js";
+import memberRoutes from "./routes/members.js";
+import planRoutes from "./routes/plans.js";
+import subscriptionRoutes from "./routes/subscriptions.js";
+import contactRoutes from "./routes/contacts.js";
+import dashboardRoutes from "./routes/dashboard.js";
 
 // Initialize - prefer `config.env` but fall back to `.env` if present
 const envPath = fs.existsSync("./config.env") ? "./config.env" : fs.existsSync("./.env") ? "./.env" : undefined;
@@ -14,6 +23,10 @@ if (envPath) {
   config();
   console.log("Loaded env using default dotenv config()");
 }
+
+// Connect to MongoDB
+connectDB();
+
 const app = express();
 const router = express.Router();
 
@@ -49,7 +62,7 @@ app.use(
       // Reject if none of the above
       callback(new Error('Not allowed by CORS'));
     },
-    methods: ["GET", "POST", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
   })
 );
@@ -131,6 +144,14 @@ router.post("/calculate-bmi", (req, res) => {
 
 // Mount Router
 app.use(router);
+
+// API Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/members", memberRoutes);
+app.use("/api/plans", planRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/contacts", contactRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // Start Server
 const PORT = process.env.PORT || 4000;
